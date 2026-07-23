@@ -2,9 +2,9 @@
   "name":"Mi Balance",
   "short_name":"Mi Balance",
   "description":"Control financiero personal local-first",
-  "start_url":"/",
+  "start_url":"./",
   "display":"standalone",
   "background_color":"#f8f3e9",
   "theme_color":"#24483a",
-  "icons":[{"src":"/favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+  "icons":[{"src":"./favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
 }
