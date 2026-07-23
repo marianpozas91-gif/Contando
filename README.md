@@ -30,6 +30,8 @@ npm run lint
 npm run build
 ```
 
+La publicación en GitHub Pages se ejecuta automáticamente al actualizar la rama `main`.
+
 ## Privacidad
 
 Esta primera versión no utiliza cuentas ni una base de datos remota. La información financiera se guarda mediante `localStorage` en el navegador. Borrar los datos del navegador elimina la información local; usa la copia de seguridad JSON para conservarla o moverla a otro dispositivo.
