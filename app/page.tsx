@@ -2,6 +2,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import * as XLSX from "xlsx";
 
 type TxType = "income" | "expense";
 type TxStatus = "paid" | "pending";
@@ -10,49 +11,32 @@ type Budget = { id:string; kind:TxType; area:string; category:string; planned:nu
 type Debt = { id:string; name:string; balance:number; plannedPayment:number; paid:number; dueDay:number };
 type Recurring = { id:string; name:string; amount:number; frequency:string; nextDate:string; area:string; active:boolean };
 type Audit = { id:string; at:string; action:string; detail:string };
-type Store = { transactions:Transaction[]; budgets:Budget[]; debts:Debt[]; recurring:Recurring[]; areas:string[]; categories:string[]; monthlyNote:string; audit:Audit[] };
+type Profile = { name:string; email:string };
+type Store = { transactions:Transaction[]; budgets:Budget[]; debts:Debt[]; recurring:Recurring[]; areas:string[]; categories:string[]; monthlyNote:string; audit:Audit[]; profile:Profile };
 type Editor = { kind:"transaction"|"budget"|"debt"|"recurring"; id?:string } | null;
 type Screen = "home"|"transactions"|"budget"|"reports"|"more";
 
 const uid=()=>`${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
-const today="2026-07-22";
+const today=new Date().toISOString().slice(0,10);
 const initial:Store={
-  transactions:[
-    {id:"t1",type:"income",date:"2026-07-19",description:"Reservación Airbnb",area:"Airbnb",category:"Reservaciones",amount:25200,status:"paid",notes:"Ingreso neto del mes"},
-    {id:"t2",type:"income",date:"2026-07-21",description:"Sesiones de terapia",area:"Terapia",category:"Sesiones",amount:28000,status:"paid",notes:"31 sesiones cobradas"},
-    {id:"t3",type:"expense",date:"2026-07-22",description:"Supermercado",area:"Hogar",category:"Alimentación",amount:9440,status:"paid",notes:"Compras acumuladas"},
-    {id:"t4",type:"expense",date:"2026-07-18",description:"Mantenimiento Airbnb",area:"Airbnb",category:"Mantenimiento",amount:10850,status:"paid",notes:"Incluye reparación de calentador"},
-    {id:"t5",type:"expense",date:"2026-07-15",description:"Pagos de deudas",area:"Personal",category:"Deudas",amount:7200,status:"paid",notes:"BBVA y crédito personal"},
-    {id:"t6",type:"expense",date:"2026-07-25",description:"Internet hogar",area:"Hogar",category:"Servicios",amount:650,status:"pending",notes:"Pago recurrente"},
-    {id:"t7",type:"expense",date:"2026-07-28",description:"Luz Airbnb",area:"Airbnb",category:"Servicios",amount:890,status:"pending",notes:"Monto estimado"}
-  ],
-  budgets:[
-    {id:"b1",kind:"income",area:"Airbnb",category:"Reservaciones",planned:28000},
-    {id:"b2",kind:"income",area:"Terapia",category:"Sesiones",planned:25000},
-    {id:"b3",kind:"expense",area:"Airbnb",category:"Mantenimiento",planned:8500},
-    {id:"b4",kind:"expense",area:"Hogar",category:"Alimentación",planned:12000},
-    {id:"b5",kind:"expense",area:"Personal",category:"Deudas",planned:8000},
-    {id:"b6",kind:"expense",area:"Hogar",category:"Servicios",planned:4100}
-  ],
-  debts:[
-    {id:"d1",name:"Tarjeta BBVA",balance:18400,plannedPayment:4200,paid:4200,dueDay:25},
-    {id:"d2",name:"Crédito personal",balance:32000,plannedPayment:3000,paid:3000,dueDay:15},
-    {id:"d3",name:"Tienda departamental",balance:6800,plannedPayment:800,paid:0,dueDay:29}
-  ],
-  recurring:[
-    {id:"r1",name:"Internet hogar",amount:650,frequency:"Mensual",nextDate:"2026-07-25",area:"Hogar",active:true},
-    {id:"r2",name:"Luz Airbnb",amount:890,frequency:"Bimestral",nextDate:"2026-07-28",area:"Airbnb",active:true},
-    {id:"r3",name:"Seguro del auto",amount:1450,frequency:"Mensual",nextDate:"2026-08-02",area:"Personal",active:true}
-  ],
-  areas:["Hogar","Airbnb","Terapia","Personal"],
-  categories:["Alimentación","Deudas","Mantenimiento","Reservaciones","Servicios","Sesiones","Transporte","Otros"],
-  monthlyNote:"Julio cerró con un resultado positivo. La reparación de Airbnb elevó el gasto, pero los ingresos de terapia compensaron la diferencia.",
-  audit:[]
+  transactions:[],
+  budgets:[],
+  debts:[],
+  recurring:[],
+  areas:["Hogar","Trabajo","Personal","Otros"],
+  categories:["Alimentación","Servicios","Transporte","Deudas","Salud","Ingresos","Otros"],
+  monthlyNote:"",
+  audit:[],
+  profile:{name:"Mi perfil",email:""}
 };
 
 const money=(value:number)=>new Intl.NumberFormat("es-MX",{style:"currency",currency:"MXN",maximumFractionDigits:0}).format(value);
 const dateLabel=(value:string)=>new Intl.DateTimeFormat("es-MX",{day:"numeric",month:"short"}).format(new Date(`${value}T12:00:00`));
 const cloneInitial=():Store=>JSON.parse(JSON.stringify(initial));
+const legacyDemoIds=["t1","t2","t3","t4","t5","t6","t7"];
+const isUntouchedDemo=(value:any)=>Array.isArray(value?.transactions)&&value.transactions.length===legacyDemoIds.length&&legacyDemoIds.every(id=>value.transactions.some((item:any)=>item.id===id))&&(!value.audit||value.audit.length===0);
+const normalizeStore=(value:any):Store=>({...cloneInitial(),...value,profile:{...initial.profile,...value?.profile}});
+const initials=(name:string)=>name.trim().split(/\s+/).filter(Boolean).slice(0,2).map(part=>part[0]?.toUpperCase()).join("")||"MB";
 
 export default function Home(){
   const [store,setStore]=useState<Store>(initial);
@@ -66,7 +50,7 @@ export default function Home(){
   const [showAmounts,setShowAmounts]=useState(true);
 
   useEffect(()=>{
-    try{const saved=localStorage.getItem("mi-balance-v1");if(saved)setStore(JSON.parse(saved));}catch{}
+    try{const saved=localStorage.getItem("mi-balance-v1");if(saved){const parsed=JSON.parse(saved);setStore(isUntouchedDemo(parsed)?cloneInitial():normalizeStore(parsed));}}catch{}
     setReady(true);
     if("serviceWorker" in navigator)navigator.serviceWorker.register(new URL("sw.js",window.location.href).pathname).catch(()=>{});
   },[]);
@@ -109,12 +93,12 @@ export default function Home(){
   function edit(kind:NonNullable<Editor>["kind"],id?:string){setEditor({kind,id})}
 
   const nav:{id:Screen;label:string;icon:string}[]=[
-    {id:"home",label:"Inicio",icon:"⌂"},{id:"transactions",label:"Movimientos",icon:"≡"},{id:"budget",label:"Presupuesto",icon:"▥"},{id:"reports",label:"Reportes",icon:"◔"},{id:"more",label:"Más",icon:"•••"}
+    {id:"home",label:"Inicio",icon:"⌂"},{id:"transactions",label:"Movimientos",icon:"≡"},{id:"budget",label:"Presupuesto",icon:"▥"},{id:"reports",label:"Reportes",icon:"◔"},{id:"more",label:"Ajustes",icon:"⚙"}
   ];
   return <main className="app-shell">
     <aside className="desktop-brand"><div className="logo">MB</div><h1>Mi Balance</h1><p>Tu dinero, claro y en calma.</p><small>Los datos se guardan únicamente en este dispositivo.</small></aside>
     <section className="phone">
-      <header className="topbar"><div className="avatar">LM</div><div><small>{screen==="reports"?"Tu historia financiera":"Mi balance"}</small><strong>{screenTitle(screen)}</strong></div><button className="icon-btn" onClick={()=>setShowAmounts(v=>!v)} aria-label={showAmounts?"Ocultar cantidades":"Mostrar cantidades"}>{showAmounts?"◉":"○"}</button></header>
+      <header className="topbar"><div className="avatar">{initials(store.profile.name)}</div><div><small>{screen==="reports"?"Tu historia financiera":"Mi balance"}</small><strong>{screenTitle(screen)}</strong></div><button className="icon-btn" onClick={()=>setShowAmounts(v=>!v)} aria-label={showAmounts?"Ocultar cantidades":"Mostrar cantidades"}>{showAmounts?"◉":"○"}</button></header>
       <div className="content">
         {screen==="home"&&<Dashboard store={store} summary={summary} money={displayMoney} edit={edit} go={setScreen}/>} 
         {screen==="transactions"&&<Transactions store={store} filter={filter} setFilter={setFilter} search={search} setSearch={setSearch} edit={edit}/>} 
@@ -134,6 +118,7 @@ export default function Home(){
 function Dashboard({store,summary,money:fmt,edit,go}:{store:Store;summary:any;money:(n:number)=>string;edit:(k:any,id?:string)=>void;go:(s:Screen)=>void}){
   const pending=store.transactions.filter(t=>t.status==="pending").slice(0,3);
   const over=Math.max(0,summary.expense-summary.expensePlan);
+  if(!store.transactions.length)return <div className="welcome-state"><div className="welcome-mark">MB</div><small>Tu espacio está listo</small><h2>Empieza con tus propios números</h2><p>Agrega tu primer ingreso o gasto, o importa varios movimientos desde un archivo Excel.</p><button onClick={()=>edit("transaction")}>＋ Agregar movimiento</button><button className="secondary" onClick={()=>go("more")}>↑ Importar Excel</button><span>Tus datos se guardan únicamente en este dispositivo.</span></div>;
   return <>
     <article className="hero"><small>Disponible este mes</small><h2>{fmt(summary.balance)}</h2><div className="hero-row"><span>Saldo proyectado</span><b>{fmt(summary.projected)}</b></div><div className="progress dark"><i style={{width:`${Math.min(100,summary.expense/Math.max(summary.expensePlan,1)*100)}%`}}/></div><div className="hero-row subtle"><span>Gastado: {Math.round(summary.expense/Math.max(summary.expensePlan,1)*100)}%</span><span>Quedan 9 días</span></div></article>
     <SectionTitle kicker="Un vistazo" title="Así va tu mes" action="Ver detalle" onClick={()=>go("reports")}/>
@@ -176,15 +161,43 @@ function Reports({store,summary,setStore,notify}:{store:Store;summary:any;setSto
 }
 
 function More({store,setStore,edit,notify}:{store:Store;setStore:any;edit:(k:any,id?:string)=>void;notify:(s:string)=>void}){
-  const [panel,setPanel]=useState<"debts"|"recurring"|"data">("debts");
-  const importFile=(e:ChangeEvent<HTMLInputElement>)=>{const file=e.target.files?.[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const value=JSON.parse(String(reader.result));if(!value.transactions||!value.budgets)throw new Error();setStore(value);notify("Copia restaurada")}catch{notify("El archivo no es una copia válida")}};reader.readAsText(file)};
+  const [panel,setPanel]=useState<"profile"|"import"|"debts"|"recurring">(store.transactions.length?"profile":"import");
+  const [profile,setProfile]=useState<Profile>(store.profile);
+  const importBackup=(e:ChangeEvent<HTMLInputElement>)=>{const file=e.target.files?.[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const value=JSON.parse(String(reader.result));if(!value.transactions||!value.budgets)throw new Error();setStore(normalizeStore(value));setProfile(normalizeStore(value).profile);notify("Copia restaurada")}catch{notify("El archivo no es una copia válida")}};reader.readAsText(file);e.target.value=""};
+  const importWorkbook=async(e:ChangeEvent<HTMLInputElement>)=>{
+    const file=e.target.files?.[0];if(!file)return;
+    try{
+      const workbook=XLSX.read(await file.arrayBuffer(),{type:"array"});
+      const sheet=workbook.Sheets[workbook.SheetNames[0]];
+      if(!sheet)throw new Error("El archivo no contiene hojas");
+      const rows=XLSX.utils.sheet_to_json<Record<string,unknown>>(sheet,{defval:""});
+      const imported=rows.map(workbookRowToTransaction).filter((item):item is Transaction=>Boolean(item));
+      if(!imported.length)throw new Error("No encontramos movimientos válidos");
+      setStore((prev:Store)=>({
+        ...prev,
+        transactions:[...imported,...prev.transactions],
+        areas:Array.from(new Set([...prev.areas,...imported.map(item=>item.area)])),
+        categories:Array.from(new Set([...prev.categories,...imported.map(item=>item.category)])),
+        audit:[{id:uid(),at:new Date().toISOString(),action:"Importó",detail:`${imported.length} movimientos desde ${file.name}`},...prev.audit].slice(0,50)
+      }));
+      notify(`${imported.length} movimientos importados`);
+    }catch(error){notify(error instanceof Error?error.message:"No pudimos leer el archivo")}
+    e.target.value="";
+  };
   const backup=()=>{download("mi-balance-respaldo.json",JSON.stringify(store,null,2),"application/json");notify("Copia de seguridad descargada")};
-  const reset=()=>{if(confirm("¿Restaurar los datos de demostración? Se reemplazarán tus cambios actuales.")){setStore(cloneInitial());notify("Datos restaurados")}};
-  return <><article className="profile"><div className="avatar large">LM</div><span><b>Lucía Martínez</b><small>Datos guardados en este dispositivo</small></span></article>
-    <div className="tabs triple"><button className={panel==="debts"?"active":""} onClick={()=>setPanel("debts")}>Deudas</button><button className={panel==="recurring"?"active":""} onClick={()=>setPanel("recurring")}>Recurrentes</button><button className={panel==="data"?"active":""} onClick={()=>setPanel("data")}>Datos</button></div>
+  const reset=()=>{if(confirm("¿Borrar todos tus datos de este dispositivo? Esta acción no se puede deshacer.")){const empty=cloneInitial();empty.profile=store.profile;setStore(empty);notify("Datos borrados")}};
+  const saveProfile=(e:FormEvent)=>{e.preventDefault();const clean={name:profile.name.trim()||"Mi perfil",email:profile.email.trim()};setProfile(clean);setStore((prev:Store)=>({...prev,profile:clean,audit:[{id:uid(),at:new Date().toISOString(),action:"Editó",detail:"Información del perfil"},...prev.audit].slice(0,50)}));notify("Perfil actualizado")};
+  return <><button className="profile profile-button" onClick={()=>setPanel("profile")}><div className="avatar large">{initials(store.profile.name)}</div><span><b>{store.profile.name}</b><small>{store.profile.email||"Completa la información de tu perfil"}</small></span><em>Editar →</em></button>
+    <div className="settings-menu">
+      <button className={panel==="profile"?"active":""} onClick={()=>setPanel("profile")}><i>◎</i><span>Mi perfil</span></button>
+      <button className={panel==="import"?"active":""} onClick={()=>setPanel("import")}><i>↑</i><span>Importar datos</span></button>
+      <button className={panel==="debts"?"active":""} onClick={()=>setPanel("debts")}><i>▣</i><span>Deudas</span></button>
+      <button className={panel==="recurring"?"active":""} onClick={()=>setPanel("recurring")}><i>↻</i><span>Recurrentes</span></button>
+    </div>
+    {panel==="profile"&&<form className="settings-panel" onSubmit={saveProfile}><h3>Información del perfil</h3><p>Estos datos solo se guardan en este dispositivo.</p><Field label="Nombre"><input value={profile.name} onChange={e=>setProfile(prev=>({...prev,name:e.target.value}))} placeholder="Tu nombre"/></Field><Field label="Correo (opcional)"><input type="email" value={profile.email} onChange={e=>setProfile(prev=>({...prev,email:e.target.value}))} placeholder="tu@correo.com"/></Field><button className="primary-setting" type="submit">Guardar perfil</button></form>}
+    {panel==="import"&&<div className="settings-panel"><h3>Importar movimientos</h3><p>Sube un archivo Excel o CSV. La primera fila debe incluir: <b>Fecha, Tipo, Descripción y Monto</b>. También puedes incluir Área, Categoría, Estado y Notas.</p><label className="import-drop"><i>↑</i><b>Elegir Excel o CSV</b><small>.xlsx, .xls o .csv</small><input type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" onChange={importWorkbook}/></label><div className="data-divider"><span>Copias de seguridad</span></div><button onClick={backup}>↓ Descargar copia completa</button><label className="secondary-upload">↑ Restaurar copia JSON<input type="file" accept="application/json" onChange={importBackup}/></label><button className="danger-text" onClick={reset}>Borrar todos mis datos</button><EditableTags title="Áreas" field="areas" store={store} setStore={setStore} notify={notify}/><EditableTags title="Categorías" field="categories" store={store} setStore={setStore} notify={notify}/><div className="history"><h3>Actividad reciente</h3>{store.audit.length?store.audit.slice(0,8).map(a=><div key={a.id}><b>{a.action}</b><span>{a.detail}</span><small>{new Date(a.at).toLocaleString("es-MX")}</small></div>):<Empty text="Los cambios que hagas aparecerán aquí"/>}</div></div>}
     {panel==="debts"&&<><div className="section-line"><span>{store.debts.length} deudas activas</span><button onClick={()=>edit("debt")}>＋ Agregar</button></div><div className="list-card">{store.debts.map(d=><button className="row" key={d.id} onClick={()=>edit("debt",d.id)}><i className="row-icon">▣</i><span><b>{d.name}</b><small>Saldo {money(d.balance)} · vence el {d.dueDay}</small></span><strong>{money(d.paid)} / {money(d.plannedPayment)}</strong><em>Editar</em></button>)}</div></>}
     {panel==="recurring"&&<><div className="section-line"><span>{store.recurring.length} programados</span><button onClick={()=>edit("recurring")}>＋ Agregar</button></div><div className="list-card">{store.recurring.map(r=><button className="row" key={r.id} onClick={()=>edit("recurring",r.id)}><i className="row-icon">↻</i><span><b>{r.name}</b><small>{r.frequency} · {dateLabel(r.nextDate)} · {r.area}</small></span><strong>{money(r.amount)}</strong><em>{r.active?"Activo":"Pausado"}</em></button>)}</div></>}
-    {panel==="data"&&<div className="data-panel"><h3>Control de tus datos</h3><p>Tu información vive en este navegador. Descarga una copia regularmente para poder restaurarla en otro dispositivo.</p><button onClick={backup}>↓ Descargar copia de seguridad</button><label>↑ Restaurar copia<input type="file" accept="application/json" onChange={importFile}/></label><button className="danger-text" onClick={reset}>Restaurar datos de demostración</button><EditableTags title="Áreas" field="areas" store={store} setStore={setStore} notify={notify}/><EditableTags title="Categorías" field="categories" store={store} setStore={setStore} notify={notify}/><div className="history"><h3>Actividad reciente</h3>{store.audit.length?store.audit.slice(0,8).map(a=><div key={a.id}><b>{a.action}</b><span>{a.detail}</span><small>{new Date(a.at).toLocaleString("es-MX")}</small></div>):<Empty text="Los cambios que hagas aparecerán aquí"/>}</div></div>}
   </>
 }
 
@@ -204,6 +217,25 @@ function EditorModal({editor,store,save,close,askDelete}:{editor:NonNullable<Edi
 }
 
 function ConfirmModal({close,confirm}:{close:()=>void;confirm:()=>void}){return <div className="modal-backdrop"><div className="confirm"><i>!</i><h2>¿Eliminar este registro?</h2><p>Se quitará de tus cálculos y reportes. Esta acción quedará anotada en la actividad reciente.</p><div><button onClick={close}>Cancelar</button><button onClick={confirm}>Sí, eliminar</button></div></div></div>}
+function normalizeHeader(value:string){return value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase().replace(/\s+/g,"_")}
+function parseWorkbookDate(value:unknown){
+  if(typeof value==="number"){const date=new Date(Math.round((value-25569)*86400*1000));return Number.isNaN(date.getTime())?today:date.toISOString().slice(0,10)}
+  const text=String(value||"").trim();if(!text)return today;
+  const latin=text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);if(latin)return `${latin[3]}-${latin[2].padStart(2,"0")}-${latin[1].padStart(2,"0")}`;
+  const date=new Date(text);return Number.isNaN(date.getTime())?today:date.toISOString().slice(0,10);
+}
+function parseWorkbookAmount(value:unknown){const normalized=String(value??"").replace(/[^\d,.-]/g,"").replace(/,(?=\d{1,2}$)/,".").replace(/,/g,"");return Number(normalized)}
+function workbookRowToTransaction(row:Record<string,unknown>):Transaction|null{
+  const data=Object.fromEntries(Object.entries(row).map(([key,value])=>[normalizeHeader(key),value]));
+  const description=String(data.descripcion??data.description??data.concepto??"").trim();
+  const rawAmount=data.monto??data.importe??data.amount??data.cantidad;
+  const amount=parseWorkbookAmount(rawAmount);
+  if(!description||!Number.isFinite(amount)||amount===0)return null;
+  const rawType=normalizeHeader(String(data.tipo??data.type??""));
+  const expense=amount<0||["gasto","egreso","expense","cargo"].some(value=>rawType.includes(value));
+  const rawStatus=normalizeHeader(String(data.estado??data.status??""));
+  return{id:uid(),type:expense?"expense":"income",date:parseWorkbookDate(data.fecha??data.date),description,area:String(data.area??"Otros").trim()||"Otros",category:String(data.categoria??data.category??"Otros").trim()||"Otros",amount:Math.abs(amount),status:rawStatus.includes("pend")?"pending":"paid",notes:String(data.notas??data.notes??"").trim()};
+}
 function EditableTags({title,field,store,setStore,notify}:{title:string;field:"areas"|"categories";store:Store;setStore:any;notify:(s:string)=>void}){
   const singular=title==="Áreas"?"área":"categoría";
   const add=()=>{const value=prompt(`Nueva ${singular}`)?.trim();if(!value)return;if(store[field].some(x=>x.toLowerCase()===value.toLowerCase())){notify("Ese nombre ya existe");return}setStore((p:Store)=>({...p,[field]:[...p[field],value],audit:[{id:uid(),at:new Date().toISOString(),action:"Creó",detail:`${singular}: ${value}`},...p.audit]}));notify("Lista actualizada")};
@@ -217,5 +249,5 @@ function SectionTitle({kicker,title,action,onClick}:{kicker:string;title:string;
 function Empty({text}:{text:string}){return <div className="empty"><i>○</i><span>{text}</span></div>}
 function labelKind(k:string){return({transaction:"Movimiento",budget:"Presupuesto",debt:"Deuda",recurring:"Recurrente"} as any)[k]}
 function editorTitle(k:string){return({transaction:"Movimiento",budget:"Partida de presupuesto",debt:"Deuda",recurring:"Gasto recurrente"} as any)[k]}
-function screenTitle(s:Screen){return({home:"Julio 2026",transactions:"Movimientos",budget:"Presupuesto",reports:"Reportes",more:"Organiza tu cuenta"})[s]}
+function screenTitle(s:Screen){return({home:new Intl.DateTimeFormat("es-MX",{month:"long",year:"numeric"}).format(new Date()),transactions:"Movimientos",budget:"Presupuesto",reports:"Reportes",more:"Ajustes"})[s]}
 function download(name:string,content:string,type:string){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}

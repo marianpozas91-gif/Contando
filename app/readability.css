@@ -1,0 +1,68 @@
+/* Readable product sizing */
+.topbar small{font-size:11px}
+.hero-row{font-size:13px}
+.hero-row.subtle{font-size:11px}
+.section-title small{font-size:11px}
+.section-title button{font-size:12px}
+.section-title>span{font-size:11px}
+.metric small{font-size:12px}
+.metric span{font-size:11px;line-height:1.35}
+.insight small{font-size:10px}
+.insight p{font-size:12px}
+.insight button{font-size:12px}
+.row span b{font-size:13px}
+.row span small{font-size:11px}
+.row>strong{font-size:12px}
+.row>em{font-size:9px}
+.chips button,.tabs button{font-size:11px}
+.search input{font-size:13px}
+.section-line{font-size:11px}
+.budget-hero span{font-size:11px}
+.budget-head b{font-size:13px}
+.budget-head small,.budget-foot{font-size:10px}
+.budget-head>strong{font-size:11px}
+.outline-btn{font-size:12px}
+.result>b,.result p,.compare span,.compare strong{font-size:11px}
+.area-list b,.area-list strong{font-size:12px}
+.area-list small{font-size:10px}
+.note{font-size:13px}
+.action-grid button{font-size:12px}
+.bottom-nav button{font-size:10px}
+.field>span{font-size:10px}
+.field input,.field select,.field textarea{font-size:13px}
+.switch,.modal-actions button,.confirm p,.confirm button,.toast,.empty{font-size:12px}
+
+/* Clear settings and import experience */
+.profile-button{width:100%;border:0;text-align:left;position:relative}
+.profile-button em{margin-left:auto;color:#d8e3dc;font-size:11px;font-style:normal;font-weight:800}
+.profile b{font-size:15px}
+.profile small{font-size:11px}
+.settings-menu{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:14px 0}
+.settings-menu button{border:1px solid var(--line);background:var(--paper);border-radius:16px;padding:13px;display:flex;align-items:center;gap:9px;text-align:left;font-size:12px;font-weight:850}
+.settings-menu button i{width:31px;height:31px;border-radius:10px;background:var(--sagep);display:grid;place-items:center;font-style:normal;font-size:15px}
+.settings-menu button.active{background:var(--forest);color:#fff;border-color:var(--forest)}
+.settings-menu button.active i{background:#ffffff20}
+.settings-panel{background:var(--paper);border-radius:18px;padding:18px}
+.settings-panel h3{font:21px Georgia;margin:0 0 6px}
+.settings-panel>p{font-size:12px;line-height:1.55;color:var(--muted);margin:0 0 16px}
+.settings-panel>button,.settings-panel>.secondary-upload,.primary-setting{display:block;width:100%;border:0;background:var(--forest);color:#fff;border-radius:13px;padding:13px;text-align:center;font-size:12px;font-weight:900;margin-bottom:9px}
+.settings-panel>.secondary-upload{background:var(--peach);color:var(--forest);cursor:pointer}
+.settings-panel input[type=file]{display:none}
+.settings-panel .danger-text{background:none;color:var(--rose);border:1px solid #e7c9c4}
+.import-drop{border:2px dashed #b8c9bc;background:#f2f6ef;border-radius:17px;padding:22px 14px;margin-bottom:18px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;text-align:center}
+.import-drop>i{width:42px;height:42px;border-radius:13px;background:var(--forest);color:#fff;display:grid;place-items:center;font-style:normal;font-size:20px;margin-bottom:4px}
+.import-drop>b{font-size:14px}
+.import-drop>small{font-size:11px;color:var(--muted)}
+.data-divider{display:flex;align-items:center;gap:10px;margin:16px 0 11px;color:var(--muted);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.09em}
+.data-divider:before,.data-divider:after{content:"";height:1px;background:var(--line);flex:1}
+.history b,.history span{font-size:11px}
+.history small{font-size:9px}
+
+.welcome-state{background:var(--paper);border-radius:24px;padding:26px 21px;text-align:center;border:1px solid var(--line)}
+.welcome-mark{width:58px;height:58px;border-radius:18px;background:var(--forest);color:#fff;display:grid;place-items:center;margin:2px auto 15px;font:bold 18px Georgia;box-shadow:var(--shadow)}
+.welcome-state>small{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--rose);font-weight:900}
+.welcome-state h2{font:28px Georgia;margin:7px 0 9px;color:var(--forest)}
+.welcome-state p{font-size:13px;line-height:1.55;color:var(--muted);margin:0 auto 18px;max-width:300px}
+.welcome-state button{display:block;width:100%;border:0;border-radius:13px;background:var(--forest);color:#fff;padding:13px;font-size:13px;font-weight:900;margin-top:8px}
+.welcome-state button.secondary{background:var(--peach);color:var(--forest)}
+.welcome-state>span{display:block;font-size:10px;color:var(--muted);margin-top:16px;line-height:1.45}

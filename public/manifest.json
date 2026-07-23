@@ -1,10 +1,30 @@
 {
-  "name":"Mi Balance",
-  "short_name":"Mi Balance",
-  "description":"Control financiero personal local-first",
-  "start_url":"./",
-  "display":"standalone",
-  "background_color":"#f8f3e9",
-  "theme_color":"#24483a",
-  "icons":[{"src":"./favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+  "id": "./",
+  "name": "Mi Balance",
+  "short_name": "MB",
+  "description": "Control financiero personal local-first",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f8f3e9",
+  "theme_color": "#24483a",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
 }

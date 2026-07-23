@@ -16,12 +16,10 @@ export const metadata: Metadata = {
   title: "Mi Balance",
   description: "Control financiero personal, claro y editable.",
   manifest: process.env.GITHUB_PAGES === "true" ? "/Contando/manifest.json" : "/manifest.json",
-  other: {
-    "codex-preview": "development",
-  },
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: process.env.GITHUB_PAGES === "true" ? "/Contando/icon-192.png" : "/icon-192.png",
+    shortcut: process.env.GITHUB_PAGES === "true" ? "/Contando/icon-192.png" : "/icon-192.png",
+    apple: process.env.GITHUB_PAGES === "true" ? "/Contando/apple-touch-icon.png" : "/apple-touch-icon.png",
   },
 };
 
