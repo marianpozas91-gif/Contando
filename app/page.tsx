@@ -68,7 +68,7 @@ export default function Home(){
   useEffect(()=>{
     try{const saved=localStorage.getItem("mi-balance-v1");if(saved)setStore(JSON.parse(saved));}catch{}
     setReady(true);
-    if("serviceWorker" in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});
+    if("serviceWorker" in navigator)navigator.serviceWorker.register(new URL("sw.js",window.location.href).pathname).catch(()=>{});
   },[]);
   useEffect(()=>{if(ready)localStorage.setItem("mi-balance-v1",JSON.stringify(store));},[store,ready]);
   useEffect(()=>{if(!toast)return;const id=setTimeout(()=>setToast(""),2500);return()=>clearTimeout(id)},[toast]);
