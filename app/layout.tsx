@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Mi Balance",
   description: "Control financiero personal, claro y editable.",
-  manifest: "/manifest.json",
+  manifest: process.env.GITHUB_PAGES === "true" ? "/Contando/manifest.json" : "/manifest.json",
   other: {
     "codex-preview": "development",
   },
