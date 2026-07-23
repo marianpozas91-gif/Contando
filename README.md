@@ -1,5 +1,7 @@
 # Mi Balance
 
+Aplicación publicada en GitHub Pages: <https://marianpozas91-gif.github.io/Contando/>
+
 MVP local-first para controlar ingresos, gastos, presupuestos, deudas y pagos recurrentes. Está diseñado para móvil, funciona como PWA y conserva la información en el navegador del dispositivo.
 
 ## Funciones
